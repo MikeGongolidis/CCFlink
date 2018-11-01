@@ -9,12 +9,12 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
-public class MapFilterP {
+public class SpeedRadar {
     public static void main(String[] args) throws Exception {
         // Program Starts
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        String inFilePath = "input.csv";
-        String outFilePath = "output.csv";
+        String inFilePath = "cars.csv";
+        String outFilePath = "speedfines.csv";
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> filterOut = source.map(

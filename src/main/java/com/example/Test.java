@@ -22,8 +22,8 @@ public class Test {
     public static void main(String[] args) throws Exception {
         // Program Starts
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        String inFilePath = "file.csv";
-        String outFilePath = "out.csv";
+        String inFilePath = "dummy.csv";
+        String outFilePath = "dummyParsing.csv";
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);

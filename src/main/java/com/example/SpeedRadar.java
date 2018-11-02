@@ -9,18 +9,20 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+
+// NOW YOU NEED TO SPECIFY THE INPUT FILE AND OUTPUT FOLDER IN THE ARGUMENTS.
 public class SpeedRadar {
     public static void main(String[] args) throws Exception {
         // Program Starts
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        String inFilePath = "/media/bart/SSD_DATA/EIT/year_1/Cloud_computers/mike/data/input.csv";
-        String outFilePath = "/media/bart/SSD_DATA/EIT/year_1/Cloud_computers/mike/data/output.csv";
+        String inFilePath = args[0];
+        String outFilePath = args[1];
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> filterOut = source.map(
-        new LoadData())
+                new LoadData())
         .filter(new FilterSpeed());
-        filterOut.writeAsText(outFilePath, FileSystem.WriteMode.OVERWRITE);
+        filterOut.writeAsText(outFilePath+"speedfines.csv", FileSystem.WriteMode.OVERWRITE);
         try {
             env.execute();
         } catch (Exception e) {

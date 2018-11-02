@@ -13,8 +13,8 @@ public class SpeedRadar {
     public static void main(String[] args) throws Exception {
         // Program Starts
         final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        String inFilePath = "cars.csv";
-        String outFilePath = "speedfines.csv";
+        String inFilePath = "/media/bart/SSD_DATA/EIT/year_1/Cloud_computers/mike/data/input.csv";
+        String outFilePath = "/media/bart/SSD_DATA/EIT/year_1/Cloud_computers/mike/data/output.csv";
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> filterOut = source.map(
@@ -26,16 +26,7 @@ public class SpeedRadar {
                     return out;
                 }
             }
-        ).filter(new FilterFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>() {
-            @Override
-            public boolean filter(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> in) throws Exception {
-                if (in.f5 > 90) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        });
+        ).filter(new FilterSpeed());
         filterOut.writeAsText(outFilePath, FileSystem.WriteMode.OVERWRITE);
         try {
             env.execute();
@@ -44,4 +35,16 @@ public class SpeedRadar {
         }
         // Program Ends
     }
+
+    private static class FilterSpeed implements FilterFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
+        @Override
+        public boolean filter(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> in) throws Exception {
+            if (in.f5 > 90) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
 }

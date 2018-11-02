@@ -18,15 +18,8 @@ public class SpeedRadar {
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> filterOut = source.map(
-            new MapFunction<String, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>() {
-                @Override
-                public Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> map(String in) throws Exception {
-                    String[] fieldArray = in.split(",");
-                    Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> out = new Tuple6(Integer.parseInt (fieldArray[0]), Integer.parseInt(fieldArray[1]),Integer.parseInt(fieldArray[3]),Integer.parseInt(fieldArray[6]),Integer.parseInt(fieldArray[5]),Integer.parseInt(fieldArray[2]));
-                    return out;
-                }
-            }
-        ).filter(new FilterSpeed());
+        new LoadData())
+        .filter(new FilterSpeed());
         filterOut.writeAsText(outFilePath, FileSystem.WriteMode.OVERWRITE);
         try {
             env.execute();
@@ -35,6 +28,16 @@ public class SpeedRadar {
         }
         // Program Ends
     }
+
+    private static class LoadData implements MapFunction<String, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
+        @Override
+        public Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> map(String in) throws Exception {
+            String[] fieldArray = in.split(",");
+            Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> out = new Tuple6(Integer.parseInt (fieldArray[0]), Integer.parseInt(fieldArray[1]),Integer.parseInt(fieldArray[3]),Integer.parseInt(fieldArray[6]),Integer.parseInt(fieldArray[5]),Integer.parseInt(fieldArray[2]));
+            return out;
+        }
+    }
+
 
     private static class FilterSpeed implements FilterFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
         @Override

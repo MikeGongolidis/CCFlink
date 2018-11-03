@@ -20,10 +20,10 @@ import org.apache.flink.util.Collector;
 import java.util.Iterator;
 
 /*
-* 		We need the function that calculates the average speed (Average)
-* 		and the output to be created as it is requested in the pdf.
-* 	    Then parallelism
-* */
+ * 		We need the function that calculates the average speed (Average)
+ * 		and the output to be created as it is requested in the pdf.
+ * 	    Then parallelism
+ * */
 
 
 public class AverageSpeed {
@@ -35,27 +35,28 @@ public class AverageSpeed {
         DataStreamSource<String> source = env.readTextFile(inFilePath);
 
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
-	//mapping
-	SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> mapFilterStream = source
-            .map(new LoadData())//filtering
-            .filter(new FilterSegment());
+        //mapping
+        SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> mapFilterStream = source
+                .map(new LoadData())//filtering
+                .filter(new FilterSegment());
 
-	//timestamping and keying
-	KeyedStream<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>,Tuple> keyedStream = mapFilterStream.assignTimestampsAndWatermarks(
-		new AscendingTimestampExtractor<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>(){
-		@Override
-		public long extractAscendingTimestamp(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> element) {
+        //timestamping and keying
+        KeyedStream<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>,Tuple> keyedStream = mapFilterStream.assignTimestampsAndWatermarks(
+                new AscendingTimestampExtractor<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>(){
+                    @Override
+                    public long extractAscendingTimestamp(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> element) {
 
-            return element.f0 * 1;
-        }
-		}).keyBy(1);
-	
+                        return element.f0 * 1;
+                    }
+                }).keyBy(1);
 
-	//We have to call this but with an Average function that calculates the average.Its like SimpleSum on the examples
 
-	SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> averageSpeedStream =  keyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new Average());
+        //We have to call this but with an Average function that calculates the average.Its like SimpleSum on the examples
 
-		keyedStream.writeAsCsv(outFilePath, FileSystem.WriteMode.OVERWRITE);
+        SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> averageSpeedStream;
+         averageSpeedStream =  keyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new Average());
+
+        averageSpeedStream.writeAsCsv(outFilePath, FileSystem.WriteMode.OVERWRITE);
         try {
             env.execute();
         } catch (Exception e) {
@@ -74,6 +75,7 @@ public class AverageSpeed {
             Integer Time2 = 0;
             Integer Pos1 = 0;
             Integer Pos2 = 0;
+            Double Avg = 0.0;
             Integer AvgSpd = 0;
             Integer VID = 0;
             Integer Dir1 = 0;
@@ -83,28 +85,28 @@ public class AverageSpeed {
             while (iterator.hasNext()) {
                 Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
 
-                if (next.f3 == 52) { //TODO fix multiple segments of the same
-                        Time1 = next.f0;
-                        Pos1 = next.f5;
-                        VID = next.f1;
-                        Dir1 = next.f4;
-                        XWay = next.f2;
-                } else if (next.f3 == 56) {
-                        Time2 = next.f0;
-                        Pos2 = next.f5;
-                        Dir2 = next.f4;
+                if (next.f4 == 52) { //TODO fix multiple segments of the same
+                    Time1 = next.f0;
+                    Pos1 = next.f5;
+                    VID = next.f1;
+                    Dir1 = next.f3;
+                    XWay = next.f2;
+                } else if (next.f4 == 56) {
+                    Time2 = next.f0;
+                    Pos2 = next.f5;
+                    Dir2 = next.f3;
                 }
 
 
             }
             if ((Pos1 != 0 && Pos2 != 0) && (Dir1 == Dir2)) {
-                AvgSpd = Math.abs(Pos2 - Pos1) / Math.abs(Time2 - Time1); //TODO convert to miles/hour
+                Avg =  2.2369 * (Math.abs(Pos2 - Pos1) / Math.abs(Time2 - Time1)); 
+                AvgSpd = (int) Math.round(Avg);
                 if (AvgSpd > 60) {
                     collector.collect(new Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>(Time1, Time2, VID, XWay, Dir1, AvgSpd));
                 }
             }
         }
-
     }
 
     //load Data
@@ -112,7 +114,7 @@ public class AverageSpeed {
         @Override
         public Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> map(String in) throws Exception {
             String[] fieldArray = in.split(",");
-            Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> out = new Tuple6(Integer.parseInt (fieldArray[0]), Integer.parseInt(fieldArray[1]),Integer.parseInt(fieldArray[3]),Integer.parseInt(fieldArray[6]),Integer.parseInt(fieldArray[5]),Integer.parseInt(fieldArray[2]));
+            Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> out = new Tuple6(Integer.parseInt (fieldArray[0]), Integer.parseInt(fieldArray[1]),Integer.parseInt(fieldArray[3]),Integer.parseInt(fieldArray[5]),Integer.parseInt(fieldArray[6]),Integer.parseInt(fieldArray[7]));
             return out;
         }
     }
@@ -121,7 +123,7 @@ public class AverageSpeed {
     private static class FilterSegment implements FilterFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
         @Override
         public boolean filter(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> in) throws Exception {
-            if (in.f3 > 51 && in.f3 < 57) {
+            if (in.f4 > 51 && in.f4 < 57) {
                 return true;
             } else {
                 return false;
@@ -130,5 +132,3 @@ public class AverageSpeed {
     }
 
 }
-
-

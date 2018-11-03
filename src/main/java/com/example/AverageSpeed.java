@@ -85,22 +85,30 @@ public class AverageSpeed {
             while (iterator.hasNext()) {
                 Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
 
-                if (next.f4 == 52) { //TODO fix multiple segments of the same
-                    Time1 = next.f0;
-                    Pos1 = next.f5;
-                    VID = next.f1;
-                    Dir1 = next.f3;
-                    XWay = next.f2;
-                } else if (next.f4 == 56) {
-                    Time2 = next.f0;
-                    Pos2 = next.f5;
-                    Dir2 = next.f3;
-                }
+                if (next.f4 == 52) { //check if segment is already exists and keeps the biggest
+                    if (Pos1 < next.f5 && Pos1 != 0)  {
+                    //Do nothing
+                    } else  {
+                        Time1 = next.f0;
+                        Pos1 = next.f5;
+                        VID = next.f1;
+                        Dir1 = next.f3;
+                        XWay = next.f2;
+                    }
 
+                } else if (next.f4 == 56) {
+                    if (Pos2 > next.f5) {
+                    //do nothing
+                    } else {
+                        Time2 = next.f0;
+                        Pos2 = next.f5;
+                        Dir2 = next.f3;
+                    }
+                }
 
             }
             if ((Pos1 != 0 && Pos2 != 0) && (Dir1 == Dir2)) {
-                Avg =  2.2369 * (Math.abs(Pos2 - Pos1) / Math.abs(Time2 - Time1)); 
+                Avg =  2.2369 * (Math.abs(Pos2 - Pos1) / Math.abs(Time2 - Time1)); //to Miles per hour
                 AvgSpd = (int) Math.round(Avg);
                 if (AvgSpd > 60) {
                     collector.collect(new Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>(Time1, Time2, VID, XWay, Dir1, AvgSpd));

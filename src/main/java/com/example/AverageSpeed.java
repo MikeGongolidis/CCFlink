@@ -14,7 +14,7 @@ import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExt
 import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
-import org.apache.flink.streaming.api.windowing.windows.Window;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 import java.util.Iterator;
@@ -53,8 +53,7 @@ public class AverageSpeed {
 
 	//We have to call this but with an Average function that calculates the average.Its like SimpleSum on the examples
 
-	SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> averageSpeedStream;
-		averageSpeedStream =  keyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new Average());
+	SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> averageSpeedStream =  keyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(60))).apply(new Average());
 
 		keyedStream.writeAsCsv(outFilePath, FileSystem.WriteMode.OVERWRITE);
         try {
@@ -66,9 +65,9 @@ public class AverageSpeed {
 
     }
 
-    private static class Average implements WindowFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>, Tuple, Window> {
+    private static class Average implements WindowFunction<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>, Tuple, TimeWindow> {
         @Override
-        public void apply(Tuple tuple, Window window, Iterable<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterable, Collector<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> collector) {
+        public void apply(Tuple tuple, TimeWindow window, Iterable<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterable, Collector<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> collector) {
             Iterator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterator = iterable.iterator();
 
             Integer Time1 = 0;

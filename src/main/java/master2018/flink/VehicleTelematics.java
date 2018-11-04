@@ -38,34 +38,23 @@ public class VehicleTelematics {
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> speedFilter = source.map(new LoadData())
                 .filter(new FilterSpeed());
 
-        speedFilter.writeAsText(outFilePath+"speedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-
         //PART 2
 
-        //mapping
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> avgFilter = source
-                .map(new LoadData2())//filtering
+                .map(new LoadData2())
                 .filter(new FilterSegment());
 
-        //timestamping and keying
+
         KeyedStream<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>,Tuple> avgKeyedStream = avgFilter.assignTimestampsAndWatermarks(
                 new AscendingTimestampExtractor<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>(){
                     @Override
                     public long extractAscendingTimestamp(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> element) {
-
                         return element.f0 * 1;
                     }
                 }).keyBy(1);
 
-
-
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> averageSpeedStream;
-        averageSpeedStream =  avgKeyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(31))).apply(new Average());
-
-        averageSpeedStream.writeAsCsv(outFilePath+"avgspeedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
-
-
+        averageSpeedStream =  avgKeyedStream.window(EventTimeSessionWindows.withGap(Time.seconds(30))).apply(new Average());
 
         // PART 3
 
@@ -76,52 +65,17 @@ public class VehicleTelematics {
                 new AscendingTimestampExtractor<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>>(){
                     @Override
                     public long extractAscendingTimestamp(Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> element) {
-
                         return element.f0 * 1;
                     }
                 }).keyBy(1);
 
-
-
         SingleOutputStreamOperator<Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer>> accidents;
-        accidents = accKeyedStream.countWindow(4,1).apply(new WindowFunction<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>, Tuple7<Integer, Integer, Integer, Integer, Integer, Integer,Integer>, Tuple, GlobalWindow>() {
-            @Override
-            public void apply(Tuple tuple, GlobalWindow globalWindow, Iterable<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterable, Collector<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer,Integer>> collector) throws Exception {
-                Iterator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> iterator = iterable.iterator();
-                Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> first = iterator.next();
-
-                Integer time1 = 0;
-                Integer time2 = 0;
-                Integer VID = 0;
-                Integer Xway = 0;
-                Integer Seg = 0;
-                Integer Dir = 0;
-                Integer Pos1 = 0;
-                Integer Pos2 = 0;
-                Integer Flag = 0;
-                if(first != null){
-                    Pos1=first.f5;
-                    time1=first.f0;
-                    VID = first.f1;
-                    Xway = first.f2;
-                    Seg = first.f3;
-                    Dir=first.f4;
-                }
-                while(iterator.hasNext()){
-                    Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> next = iterator.next();
-                    Pos2=next.f5;
-                    time2=next.f0;
-                    if(Pos1 - Pos2 == 0 ){
-                        Flag=Flag+1;
-                    }
-                }
-                if(Flag==3){
-                    collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer,Integer>(time1, time2, VID,Xway,Seg,Dir,Pos1));
-                }
-            }
-        });
+        accidents = accKeyedStream.countWindow(4,1).apply(new Accidents());
 
 
+        // OUTPUTS
+        speedFilter.writeAsText(outFilePath+"speedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        averageSpeedStream.writeAsCsv(outFilePath+"avgspeedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         accidents.writeAsCsv(outFilePath+"accidents.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
         try {
@@ -235,4 +189,40 @@ public class VehicleTelematics {
         }
     }
 
+    private static class Accidents implements WindowFunction<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>, Tuple7<Integer, Integer, Integer, Integer, Integer, Integer,Integer>, Tuple, GlobalWindow> {
+        @Override
+        public void apply(Tuple tuple, GlobalWindow globalWindow, Iterable<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterable, Collector<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> collector) throws Exception {
+            Iterator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterator = iterable.iterator();
+            Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> first = iterator.next();
+
+            Integer time1 = 0;
+            Integer time2 = 0;
+            Integer VID = 0;
+            Integer Xway = 0;
+            Integer Seg = 0;
+            Integer Dir = 0;
+            Integer Pos1 = 0;
+            Integer Pos2 = 0;
+            Integer Flag = 0;
+            if (first != null) {
+                Pos1 = first.f5;
+                time1 = first.f0;
+                VID = first.f1;
+                Xway = first.f2;
+                Seg = first.f3;
+                Dir = first.f4;
+            }
+            while (iterator.hasNext()) {
+                Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
+                Pos2 = next.f5;
+                time2 = next.f0;
+                if (Pos1 - Pos2 == 0) {
+                    Flag = Flag + 1;
+                }
+            }
+            if (Flag == 3) {
+                collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>(time1, time2, VID, Xway, Seg, Dir, Pos1));
+            }
+        }
+    }
 }

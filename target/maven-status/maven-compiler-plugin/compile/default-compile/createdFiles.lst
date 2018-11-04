@@ -7,7 +7,6 @@ master2018/flink/VehicleTelematics$Average.class
 master2018/flink/FlatMap$2.class
 master2018/flink/SpeedRadar$1.class
 master2018/flink/VehicleTelematics$LoadData3.class
-master2018/flink/VehicleTelematics$3.class
 master2018/flink/SpeedRadar.class
 master2018/flink/AverageSpeed.class
 master2018/flink/Job.class
@@ -15,6 +14,7 @@ master2018/flink/AverageSpeed$LoadData2.class
 master2018/flink/RollingAggregations$1.class
 master2018/flink/KeyByReduce.class
 master2018/flink/Accidents.class
+master2018/flink/VehicleTelematics$Accidents.class
 master2018/flink/Accidents$1.class
 master2018/flink/VehicleTelematics$1.class
 master2018/flink/WordCount.class

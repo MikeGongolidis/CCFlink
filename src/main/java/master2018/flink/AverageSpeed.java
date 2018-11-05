@@ -11,9 +11,9 @@ import org.apache.flink.streaming.api.datastream.KeyedStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
-import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
@@ -37,7 +37,7 @@ public class AverageSpeed {
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
         //mapping
         SingleOutputStreamOperator<Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> mapFilterStream = source
-                .map(new LoadData2())//filtering
+                .map(new LoadData())//filtering
                 .filter(new FilterSegment2());
 
         //timestamping and keying
@@ -118,7 +118,7 @@ public class AverageSpeed {
     }
 
     //load Data
-    private static class LoadData2 implements MapFunction<String, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
+    private static class LoadData implements MapFunction<String, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {
         @Override
         public Tuple6<Integer,Integer,Integer,Integer,Integer,Integer> map(String in) throws Exception {
             String[] fieldArray = in.split(",");

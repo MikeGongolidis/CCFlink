@@ -83,7 +83,6 @@ public class VehicleTelematics {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // Program Ends
     }
 
     private static class LoadData implements MapFunction<String, Tuple6<Integer,Integer,Integer,Integer,Integer,Integer>> {

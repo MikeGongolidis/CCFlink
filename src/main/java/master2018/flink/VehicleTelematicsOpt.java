@@ -36,6 +36,8 @@ public class VehicleTelematicsOpt {
 
         SingleOutputStreamOperator<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> speedFilter =mappedStream.filter(new FilterSpeed());
 
+        SingleOutputStreamOperator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> finalSpeedFilter = speedFilter.map(new MapData());
+
         //PART2
         SingleOutputStreamOperator<Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer>> avgFilter = mappedStream.filter(new FilterSegment());
 
@@ -70,7 +72,7 @@ public class VehicleTelematicsOpt {
 
         //Output
 
-        speedFilter.writeAsText(outFilePath + "speedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
+        finalSpeedFilter.writeAsCsv(outFilePath + "speedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         averageSpeedStream.writeAsCsv(outFilePath+"avgspeedfines.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
         accidents.writeAsCsv(outFilePath+"accidents.csv", FileSystem.WriteMode.OVERWRITE).setParallelism(1);
 
@@ -83,11 +85,20 @@ public class VehicleTelematicsOpt {
     }
 
 
-    private static class LoadData implements MapFunction<String, Tuple7< Integer, Integer, Integer, Integer, Integer, Integer, Integer>> {
+    private static class LoadData implements MapFunction<String,Tuple7< Integer, Integer, Integer, Integer, Integer, Integer, Integer>> {
         @Override
         public Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> map(String in) throws Exception {
             String[] fieldArray = in.split(",");
             Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> out = new Tuple7(Integer.parseInt(fieldArray[0]), Integer.parseInt(fieldArray[1]), Integer.parseInt(fieldArray[3]), Integer.parseInt(fieldArray[6]), Integer.parseInt(fieldArray[5]), Integer.parseInt(fieldArray[7]), Integer.parseInt(fieldArray[2]));
+            return out;
+        }
+    }
+
+    private static class MapData implements MapFunction<Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer>, Tuple6< Integer, Integer, Integer, Integer, Integer, Integer>> {
+        @Override
+        public Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> map(Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer> in) throws Exception {
+
+            Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> out = new Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>(in.f0,in.f1,in.f2,in.f3,in.f5,in.f6);
             return out;
         }
     }
@@ -120,15 +131,12 @@ public class VehicleTelematicsOpt {
         public void apply(Tuple tuple, TimeWindow window, Iterable<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> iterable, Collector<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> collector) {
             Iterator<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> iterator = iterable.iterator();
 
-            Integer Time1 = 0;
-            Integer Time2 = 0;
-            Integer Pos1 = 0;
-            Integer Pos2 = 0;
+            Integer Time1 = 0,Time2=0;
+            Integer Pos1 = 0,Pos2 = 0;
             Double Avg = 0.0;
             Integer AvgSpd = 0;
             Integer VID = 0;
-            Integer Dir1 = 0;
-            Integer Dir2 = 0;
+            Integer Dir1=0,Dir2 = 0;
             Integer XWay = 0;
 
             while (iterator.hasNext()) {
@@ -158,8 +166,9 @@ public class VehicleTelematicsOpt {
             }
             if ((Pos1 != 0 && Pos2 != 0) && (Dir1 == Dir2)) {
                 Avg = 2.2369 * (Math.abs(Pos2 - Pos1) / Math.abs(Time2 - Time1)); //to Miles per hour
-                AvgSpd = (int) Math.round(Avg);
-                if (AvgSpd > 60) {
+
+                if (Avg > 60) {
+                    AvgSpd = (int) Math.round(Avg);
                     collector.collect(new Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>(Time1, Time2, VID, XWay, Dir1, AvgSpd));
                 }
             }
@@ -173,15 +182,14 @@ public class VehicleTelematicsOpt {
                 Iterator<Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer>> iterator = iterable.iterator();
                 Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer> first = iterator.next();
 
-                Integer time1 = 0;
-                Integer time2 = 0;
+                Integer time1 = 0,time2 = 0;
                 Integer VID = 0;
                 Integer Xway = 0;
                 Integer Seg = 0;
                 Integer Dir = 0;
-                Integer Pos1 = 0;
-                Integer Pos2 = 0;
+                Integer Pos1 = 0,Pos2 = 0;
                 Integer Flag = 0;
+                Integer temp=0;
                 if (first != null) {
                     Pos1 = first.f5;
                     time1 = first.f0;
@@ -189,8 +197,10 @@ public class VehicleTelematicsOpt {
                     Xway = first.f2;
                     Seg = first.f3;
                     Dir = first.f4;
+                    temp++;
                 }
                 while (iterator.hasNext()) {
+                    temp++;
                     Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
                     Pos2 = next.f5;
                     time2 = next.f0;
@@ -199,7 +209,7 @@ public class VehicleTelematicsOpt {
                     }
                 }
                 if (Flag == 3) {
-                    collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>(time1, time2, VID, Xway, Seg, Dir, Pos1));
+                    collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>(time1, time2, VID, Xway, Seg, Dir, temp));
                 }
             }
         }

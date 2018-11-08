@@ -57,7 +57,7 @@ public class VehicleTelematicsOpt {
 
 
 
-        KeyedStream<Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer>,Tuple> accKeyedStream = mappedStream.assignTimestampsAndWatermarks(
+        KeyedStream<Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer>,Tuple> accKeyedStream = mappedStream.filter(new FilterSpeed3()).assignTimestampsAndWatermarks(
                 new AscendingTimestampExtractor<Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer>>(){
                     @Override
                     public long extractAscendingTimestamp(Tuple7<Integer,Integer,Integer,Integer,Integer,Integer,Integer> element) {
@@ -107,6 +107,17 @@ public class VehicleTelematicsOpt {
         @Override
         public boolean filter(Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> in) throws Exception {
             if (in.f6 > 90) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    private static class FilterSpeed3 implements FilterFunction<Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>> {
+        @Override
+        public boolean filter(Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer> in) throws Exception {
+            if (in.f6 == 0) {
                 return true;
             } else {
                 return false;
@@ -189,7 +200,7 @@ public class VehicleTelematicsOpt {
                 Integer Dir = 0;
                 Integer Pos1 = 0,Pos2 = 0;
                 Integer Flag = 0;
-                Integer temp=0;
+                Integer speed =0;
                 if (first != null) {
                     Pos1 = first.f5;
                     time1 = first.f0;
@@ -197,10 +208,10 @@ public class VehicleTelematicsOpt {
                     Xway = first.f2;
                     Seg = first.f3;
                     Dir = first.f4;
-                    temp++;
+                    speed = first.f6;
                 }
                 while (iterator.hasNext()) {
-                    temp++;
+
                     Tuple7<Integer,Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
                     Pos2 = next.f5;
                     time2 = next.f0;
@@ -209,7 +220,7 @@ public class VehicleTelematicsOpt {
                     }
                 }
                 if (Flag == 3) {
-                    collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>(time1, time2, VID, Xway, Seg, Dir, temp));
+                    collector.collect(new Tuple7<Integer, Integer, Integer, Integer, Integer, Integer, Integer>(time1, time2, VID, Xway, Seg, Dir,Pos1));
                 }
             }
         }

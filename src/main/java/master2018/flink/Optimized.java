@@ -131,7 +131,7 @@ public class Optimized {
     private static class FilterSegment implements FilterFunction<Tuple7<Integer, Integer, Byte, Byte, Byte, Integer, Integer>> {
         @Override
         public boolean filter(Tuple7<Integer, Integer, Byte, Byte, Byte, Integer, Integer> in) throws Exception {
-            if (in.f3 > 51 && in.f3 < 57) {
+            if (in.f3 > 51 && in.f3 < 57 && (in.f2!=0 || in.f3==52 || in.f3==56) && ((in.f2!=4 || in.f3==52 || in.f3==56)) ) {
                 return true;
             } else {
                 return false;
